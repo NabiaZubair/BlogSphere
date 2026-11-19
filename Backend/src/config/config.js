@@ -13,10 +13,10 @@ const config={
     ACCESS:process.env.ACCESS_JWT_SECRET,
     REFRESH:process.env.REFRESH_JWT_SECRET,
     NODE_ENV:process.env.NODE_ENV,
-    GOOGLE_CLIENT_ID:process.env.GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET:process.env.GOOGLE_CLIENT_SECRET,
-    GOOGLE_REFRESH_TOKEN:process.env.GOOGLE_REFRESH_TOKEN,
+
+   GMAIL_APP_PASSWORD:process.env.GMAIL_APP_PASSWORD,
     GMAIL_USER:process.env.GMAIL_USER,
+    
     OTP_SECRET:process.env.OTP_SECRET,
     GOOGLE_ID:process.env.GOOGLE_ID
 

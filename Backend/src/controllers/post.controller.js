@@ -53,6 +53,7 @@ export const createPost = async (req, res, next) => {
             author: req.user._id,
             coverImage: uploaded,
         })
+        console.log(author);
 
         res.status(201).json(post)
     } catch (error) {
