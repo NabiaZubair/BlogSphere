@@ -5,19 +5,20 @@ const emailOTPSchema=new mongoose.Schema(
         user:{
          type:mongoose.Schema.Types.ObjectId,
          ref:"user",
-         required:true
+         required:true,
+         index:true,
         },
         otpHash:{
             type:String,
-            required:true
+            required:true,
         },
         expiresAt:{
             type:Date,
-            required:true
+            required:true,
         },
         attempts:{
             type:Number,
-            default:0
+            default:0,
         }
     },
 

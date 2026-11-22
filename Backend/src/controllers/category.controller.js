@@ -1,16 +1,28 @@
-import CategoryModel from "../Models/category.model.js";
+import CategoryModel from "../models/category.model.js";
+import slugify from "slugify";
+
+
 
 export const createCategory = async (req, res, next) => {
     try {
-        const { name, slug } = req.body;
-        if(!name?.trim() || !slug?.trim()){
+        const { name } = req.body;
+
+        if(typeof name !=="string" || !name.trim()){
             return res.status(400).json({
-                message: "category name and slug are required"
+                message: "category name is required"
+            })
+        }
+        const cleanName=name.trim();
+        const slug = slugify(cleanName,{lower:true,strict:true});
+
+        if(!slug){
+            return res.status(400).json({
+                message:"category name must conain letter or numbers"
             })
         }
         const category = await CategoryModel.create({
-            name: name.trim(),
-            slug: slug.trim().toLowerCase(),
+            name: cleanName,
+            slug,
         })
         return res.status(201).json({
             message: "category created successfully",
@@ -28,8 +40,8 @@ export const createCategory = async (req, res, next) => {
 
 export const getCategories = async (req, res, next) => {
     try {
-        const categories = await CategoryModel.find()
-            .sort({ name: 1 });
+        const categories = await (await CategoryModel.find()).toSorted({name:1});
+        
         return res.status(200).json(categories);
     } catch (error) {
         next(error)

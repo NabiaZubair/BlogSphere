@@ -7,13 +7,13 @@ const authMiddleware = async (req, res, next) => {
     try {
         
 
-        const accessToken = req.headers.authorization?.split(" ")[1]
+        const [schema,token] =( req.headers.authorization||"").split(" ");
 
-        if (!accessToken) {
+        if (schema !=="Bearer"||!token) {
             return res.status(401).json({ message: "unothorized" })
         }
 
-        const decoded = jwt.verify(accessToken, config.ACCESS);
+        const decoded = jwt.verify(token, config.ACCESS);
         const user= await userModel.findById(decoded.id).select("-password")
 
         if(!user){
@@ -28,7 +28,18 @@ const authMiddleware = async (req, res, next) => {
 
     } catch (err) {
  
-        return res.status(401).json({ message: "invalid or expired user" })
+         // only token problems are 401. TokenExpiredError is a kind of JsonWebTokenError.
+        if (err instanceof jwt.JsonWebTokenError) {
+            const expired = err.name === "TokenExpiredError";
+            return res.status(401).json({
+                message: expired ? "token expired" : "invalid token",
+                // your Axios interceptor refreshes the token when it sees TOKEN_EXPIRED
+                code: expired ? "TOKEN_EXPIRED" : "TOKEN_INVALID",
+            });
+        }
+
+        // anything else (database down, bug) is a real server error
+        next(err);
     }
 }
 

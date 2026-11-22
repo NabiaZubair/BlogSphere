@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
-import PostModel from "../Models/Post.model.js";
+import PostModel from "../models/Post.model.js";
 import { deleteImage, uploadImage } from "../services/cloudinary.service.js";
+import CategoryModel from "../models/category.model.js";
+
 
 // small helpers so errors carry the right status code
 const httpError = (status, message) => {
@@ -32,6 +34,18 @@ const parseTags = (tags) => {
         parsed.map((tag) => tag.trim().toLowerCase()).filter(Boolean)
     )].slice(0, 3);
 }
+const categoryExist = async (category) => {
+    if (!category) {
+        throw httpError(400, "category is required");
+    }
+    if (!mongoose.isValidObjectId(category)) {
+        throw httpError(400, "invalid category id");
+    }
+    const exists = await CategoryModel.exists({ _id: category });
+    if (!exists) {
+        throw httpError(400, "category does not exist");
+    }
+};
 
 export const createPost = async (req, res, next) => {
     let uploaded;
@@ -39,6 +53,7 @@ export const createPost = async (req, res, next) => {
 
         const { title, content, tags, category, status } = req.body;
         const parsedTags = parseTags(tags);
+        await categoryExist(category);
 
         if (req.file) {
             uploaded = await uploadImage(req.file.buffer);
@@ -53,7 +68,7 @@ export const createPost = async (req, res, next) => {
             author: req.user._id,
             coverImage: uploaded,
         })
-        console.log(author);
+
 
         res.status(201).json(post)
     } catch (error) {
@@ -106,9 +121,13 @@ export const getPostById = async (req, res, next) => {
         if (!mongoose.isValidObjectId(req.params.id)) {
             return res.status(400).json({ message: "invalid post id " })
         }
+
+        const visibility = req.user ? { $or: [{ status: "published" }, { author: req.user._id }] }
+            : { status: "published" };
+
         const post = await PostModel.findOne({
             _id: req.params.id,
-            status: "published",
+            ...visibility,
         })
             .populate("author", "username")
             .populate("category", "name");
@@ -127,7 +146,7 @@ export const updatePost = async (req, res, next) => {
     try {
 
         if (!mongoose.isValidObjectId(req.params.id))
-            return res.status(401).json({ message: "invalid Post Id" });
+            return res.status(400).json({ message: "invalid Post Id" });
 
         const post = await PostModel.findById(req.params.id);
 
@@ -144,7 +163,10 @@ export const updatePost = async (req, res, next) => {
         const { title, content, category, tags, status } = req.body;
         if (title !== undefined) post.title = title;
         if (content !== undefined) post.content = content;
-        if (category !== undefined) post.category = category;
+        if (category !== undefined) {
+            await categoryExist(category);
+            post.category = category;
+        }
         if (tags !== undefined) post.tags = parseTags(tags);
         if (status !== undefined) post.status = status;
 
@@ -162,7 +184,7 @@ export const updatePost = async (req, res, next) => {
             try {
                 await deleteImage(oldPublicId)
             } catch (cleanupError) {
-                console.error("old image cleanup failed".cleanupError)
+                console.error("old image cleanup failed", cleanupError)
             }
         }
 
@@ -179,16 +201,16 @@ export const updatePost = async (req, res, next) => {
 export const deletePost = async (req, res, next) => {
     try {
         if (!mongoose.isValidObjectId(req.params.id)) {
-            throw httpError(400, "invalid post id" )
+            throw httpError(400, "invalid post id")
         }
         const post = await PostModel.findById(req.params.id);
 
         if (!post) {
-             throw httpError(404,"post not found" )
-             }
+            throw httpError(404, "post not found")
+        }
 
         if (post.author.toString() !== req.user._id.toString()) {
-            throw httpError(403).json({ message: "not allowed" })
+            throw httpError(403, "not allowed")
         }
 
         await post.deleteOne();

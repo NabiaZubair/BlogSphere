@@ -1,15 +1,15 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 const BookmarkSchema= new mongoose.Schema({
      user:{
             type:mongoose.Schema.Types.ObjectId,
             ref:"user",
-            required:true
+            required:true,
         },
         post:{
             type:mongoose.Schema.Types.ObjectId,
             ref:"Posts",
-            required:true
+            required:true,
         }
 
 },

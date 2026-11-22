@@ -7,14 +7,14 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        trim: true
+        trim: true,
     },
     email: {
         type: String,
         required: true,
         unique: true,
         lowercase: true,
-        trim: true
+        trim: true,
     },
     password: {
         type: String,
@@ -24,17 +24,22 @@ const userSchema = new mongoose.Schema({
     googleId:{
         type:String,
         unique:true,
-        sparse:true
+        sparse:true,
 
     },
     authProvider:{
         type:String,
         enum:["local","google"],
-        default:"local"
+        default:"local",
     },
     isVerified:{
         type:Boolean,
-        default:false
+        default:false,
+    },
+    role:{
+        type:String,
+        enum:["user","admin"],
+        default:"user"
     }
 }, {
     timestamps: true
@@ -44,18 +49,19 @@ const userSchema = new mongoose.Schema({
 
 //hash password befor saving
 userSchema.pre("save",async function () {
-    if(!this.isModified("password")){
-        return 
-    }
+    // skip if the password didn't change OR is empty (Google accounts have none)
+    if (!this.isModified("password") || !this.password) return;
 
-    this.password=await bcrypt.hash(this.password,10)
-    
-    
+    this.password = await bcrypt.hash(this.password, 10);
 });
+
+   
 
 //verify password 
 userSchema.methods.comparePassword=async function (password) {
-    return await bcrypt.compare(password,this.password)
+   // Google-only accounts have no password, so there is nothing to compare
+    if (!this.password) return false;
+    return bcrypt.compare(password, this.password);
 
 }
 

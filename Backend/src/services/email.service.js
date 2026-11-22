@@ -33,16 +33,25 @@ export const sendEmail = async ({ to, subject, text, html }) => {
   return info;
 };
 
-export const sendOtpEmail = async (email, otp) => {
-  return sendEmail({
-    to: email,
-    subject: "Verify your email",
-    text: `Your verification code is ${otp}. It expires in 10 minutes.`,
-    html: `
-      <h2>Your verification code</h2>
+
+export const sendOtpEmail = async (email, otp, purpose = "verify") => {
+    const isReset = purpose === "reset";
+
+    const subject = isReset ? "Reset your BlogSphere password" : "Verify your email";
+    const label = isReset ? "password reset" : "verification";
+    const ignoreNote = isReset
+        ? "If you didn't request a password reset, you can ignore this email."
+        : "If you didn't register, ignore this email.";
+
+    return sendEmail({
+        to: email,
+        subject,
+        text: `Your ${label} code is ${otp}. It expires in 10 minutes. ${ignoreNote}`,
+        html: `
+      <h2>Your ${label} code</h2>
       <p style="font-size:24px;letter-spacing:4px"><b>${otp}</b></p>
       <p>This code expires in 10 minutes.</p>
-      <p>If you didn't register, ignore this email.</p>
+      <p>${ignoreNote}</p>
     `,
-  });
+    });
 };
